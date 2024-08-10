@@ -17,24 +17,28 @@ La aplicación **SCR98 TIERLIST** permite crear y gestionar listas de niveles (t
 
 ## Uso
 
-1. **Agregar Imágenes**
+1. **Descargar y Abrir la Aplicación**
+   - **Descargar el archivo HTML**: Descarga el archivo `scr98-tierlist.html` desde el repositorio.
+   - **Abrir el archivo**: Haz doble clic en el archivo descargado para abrirlo en tu navegador web. La aplicación debería cargarse automáticamente.
+
+2. **Agregar Imágenes**
    - **Desde el dispositivo**: Haz clic en el ícono de subir imágenes (o usa el input de archivo oculto) para seleccionar imágenes desde tu dispositivo.
    - **Arrastrar y soltar**: Arrastra imágenes desde tu escritorio y suéltalas en la sección de items.
 
-2. **Organizar Imágenes**
+3. **Organizar Imágenes**
    - Arrastra las imágenes desde la sección de items y suéltalas en las filas de la lista para organizarlas según tu preferencia.
 
-3. **Configurar Filas**
+4. **Configurar Filas**
    - **Cambiar color de fondo**: Usa el selector de color en la parte inferior para cambiar el color de fondo de las imágenes.
    - **Cambiar color del texto**: Cada fila tiene un color picker para cambiar el color del texto en la etiqueta de la fila.
    - **Agregar una nueva fila**: Haz clic en el botón "Añadir fila" para crear una nueva fila en la lista.
    - **Eliminar una fila**: Usa el botón de eliminar en la caja de opciones de cada fila para eliminarla.
 
-4. **Restablecer y Alternar**
+5. **Restablecer y Alternar**
    - **Restablecer posiciones**: Haz clic en el botón de reinicio para devolver todas las imágenes a la sección de items y restablecer sus posiciones.
    - **Alternar ajuste de imagen**: Usa el botón de alternar ajuste para cambiar entre "cubrir" y "contener" las imágenes.
 
-5. **Ajustar la transparencia del fondo**
+6. **Ajustar la transparencia del fondo**
    - **Hacer fondo transparente**: Haz clic en el botón de fondo transparente para hacer el fondo de las imágenes transparente.
    - **Restaurar color de fondo**: Usa el mismo botón para restaurar el color de fondo original.
 
