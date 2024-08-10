@@ -27,6 +27,7 @@
             border: 0;
             color: #fff;
             cursor: pointer;
+            font-weight: bold;
         }
 
         body {
@@ -35,7 +36,7 @@
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             margin: 0 auto;
             max-width: 960px;
-            padding-inline: 32px;
+            padding-inline: 39px;
             user-select: none;
         }
 
@@ -44,10 +45,12 @@
             justify-content: center;
             align-items: center;
             padding-block: 8px;
+            column-gap: 1rem;
 
             & img {
-                max-width: 125px;
+                max-width: 50px;
                 height: auto;
+                border-radius: 100%;
             }
         }
 
@@ -64,7 +67,10 @@
             border-bottom: 1px solid #111;
             transition: all .3s ease;
             padding-right: 80px;
+            padding-left: 80px;
             position: relative;
+            flex-wrap: wrap;
+            min-height: 80px;
 
             &.drag-over {
                 background: #555;
@@ -73,30 +79,53 @@
         }
 
         .label {
-            cursor: pointer;
-            background: var(--level, #09f);
+            background: var(--level, #80ffff);
             color: #333;
             font-weight: bold;
-            width: 80px;
-            height: 80px;
+            width: 79px;
+            min-height: 79px;
+            height: 100%;
 
             display: flex;
             align-items: center;
             justify-content: center;
+            border-right: 1px solid #333;
+            position: absolute;
+            left: 1px;
+            top: 0;
+
+            span {
+                cursor: text;
+                padding: 8px;
+                color: #333;
+            }
 
             & span:focus {
-                outline: 1px solid #fff;
+                outline: none;
             }
         }
 
-        .caja-opciones{
+        .caja-opciones {
             position: absolute;
             right: 0;
             top: 0;
             width: 80px;
             height: 80px;
             display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            row-gap: 0.6rem;
+
+            div {
+                display: flex;
+                flex-wrap: nowrap;
+                column-gap: 0.2rem;
+
+                label {
+                    position: relative;
+                }
+            }
         }
 
         #selector {
@@ -120,8 +149,8 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                width: 24px;
-                height: 24px;
+                width: 28px;
+                height: 28px;
                 padding: 4px;
 
                 &:hover {
@@ -139,10 +168,18 @@
         #selector-items {
             border: 1px solid #666;
             width: 100%;
-            height: 160px;
+            min-height: 162px;
             margin-bottom: 100px;
             display: flex;
             flex-wrap: wrap;
+
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23222" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>');
+            background-size: calc(100% - 20px) calc(100% - 20px);
+            /* Tamaño del fondo reducido */
+            background-repeat: no-repeat;
+            /* Evita repetición */
+            background-position: center;
+            /* Mantén el fondo centrado */
 
             &.drag-files {
                 background: #555;
@@ -162,81 +199,153 @@
                 pointer-events: none;
             }
         }
+
+        .item-image:active {
+            cursor: grabbing;
+        }
+
+        .color-picker,
+        .color-picker-text {
+            position: absolute;
+            opacity: 0;
+            top: 0;
+            right: 0;
+            left: 0;
+            width: 24px;
+        }
+
+        #change-background-label {
+            position: relative;
+
+            input[type="color"] {
+                width: 28px;
+                height: 28px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                opacity: 0;
+            }
+        }
     </style>
 
     <script type="module">
         const $ = el => document.querySelector(el)
         const $$ = el => document.querySelectorAll(el)
 
+        // Selecciona el input de tipo file para cargar imágenes
         const imageInput = $('#image-input')
+
+        // Selecciona la sección donde se mostrarán los items (imágenes)
         const itemsSection = $('#selector-items')
+
+        // Selecciona el botón de reinicio para resetear los elementos de la tier list
         const resetButton = $('#reset-tier-button')
+
+        // Selecciona el botón para guardar el estado actual de la tier list
         const saveButton = $('#save-tier-button')
 
+        // Función que crea un elemento de imagen a partir de la fuente (src) y lo agrega a la sección de items
         function createItem(src) {
+
+            // Normaliza la URL antes de compararla
+            const normalizedSrc = src.split('?')[0];
+
+            // Selecciona las imágenes dentro de la sección de items
+            const existingImages = $$('#selector-items .item-image');
+            const existingSrcs = [...existingImages].map(img => img.src.split('?')[0]);
+
+            // Verifica si la imagen ya está en la sección de items
+            if (existingSrcs.includes(normalizedSrc)) {
+                return;
+            }
+
+            // Crea un nuevo elemento <img>
             const imgElement = document.createElement('img')
+            // Habilita la función de arrastrar el elemento
             imgElement.draggable = true
+            // Establece la fuente de la imagen
             imgElement.src = src
+            // Asigna una clase para darle estilo a la imagen
             imgElement.className = 'item-image'
 
+            // Añade un evento para manejar cuando comienza a arrastrarse
             imgElement.addEventListener('dragstart', handleDragStart)
+            // Añade un evento para manejar cuando termina de arrastrarse
             imgElement.addEventListener('dragend', handleDragEnd)
 
+            // Añade la imagen creada a la sección de items
             itemsSection.appendChild(imgElement)
             return imgElement
         }
 
+        // Función que convierte los archivos seleccionados en elementos de imagen y los agrega a la sección de items
         function useFilesToCreateItems(files) {
+            // Verifica si hay archivos seleccionados
             if (files && files.length > 0) {
+                // Convierte la lista de archivos en un array y recorre cada archivo
                 Array.from(files).forEach(file => {
+                    // Crea un lector de archivos para leer el contenido del archivo
                     const reader = new FileReader()
 
+                    // Cuando la lectura esté completa, crea un elemento de imagen con el resultado
                     reader.onload = (eventReader) => {
                         createItem(eventReader.target.result)
                     }
 
+                    // Lee el archivo como una URL de datos
                     reader.readAsDataURL(file)
                 })
             }
         }
 
+        // Añade un evento al input de imágenes para manejar cuando se seleccionan archivos
         imageInput.addEventListener('change', (event) => {
             const { files } = event.target
             useFilesToCreateItems(files)
         })
 
+        // Variables para almacenar el elemento que se está arrastrando y su contenedor original
         let draggedElement = null
         let sourceContainer = null
 
+        // Selecciona todas las filas dentro de la tier list para añadirles eventos de drag and drop
         const rows = $$('.tier .row')
 
+        // Añade eventos de drag and drop a cada fila
         rows.forEach(row => {
             row.addEventListener('dragover', handleDragOver)
             row.addEventListener('drop', handleDrop)
             row.addEventListener('dragleave', handleDragLeave)
         })
 
+        // Añade eventos de drag and drop a la sección de items
         itemsSection.addEventListener('dragover', handleDragOver)
         itemsSection.addEventListener('drop', handleDrop)
         itemsSection.addEventListener('dragleave', handleDragLeave)
 
+        // Añade eventos adicionales para manejar el arrastre y la caída de archivos desde el escritorio
         itemsSection.addEventListener('drop', handleDropFromDesktop)
         itemsSection.addEventListener('dragover', handleDragOverFromDesktop)
 
+        // Función para manejar cuando un archivo es arrastrado desde el escritorio
         function handleDragOverFromDesktop(event) {
             event.preventDefault()
 
             const { currentTarget, dataTransfer } = event
 
+            // Si el archivo es de tipo "Files", añade una clase para indicar que se está arrastrando un archivo
             if (dataTransfer.types.includes('Files')) {
                 currentTarget.classList.add('drag-files')
             }
         }
 
+        // Función para manejar cuando un archivo es soltado desde el escritorio
         function handleDropFromDesktop(event) {
             event.preventDefault()
             const { currentTarget, dataTransfer } = event
 
+            // Si se sueltan archivos, elimina la clase de arrastre y usa los archivos para crear items
             if (dataTransfer.types.includes('Files')) {
                 currentTarget.classList.remove('drag-files')
                 const { files } = dataTransfer
@@ -244,33 +353,42 @@
             }
         }
 
+        // Función para manejar cuando un elemento es soltado en una fila
         function handleDrop(event) {
-            event.preventDefault()
+            event.preventDefault();
 
-            const { currentTarget, dataTransfer } = event
+            const { currentTarget, dataTransfer } = event;
 
+            // Si hay un contenedor de origen y un elemento arrastrado, se elimina el elemento de su contenedor original
             if (sourceContainer && draggedElement) {
-                sourceContainer.removeChild(draggedElement)
+                sourceContainer.removeChild(draggedElement);
             }
 
+            // Si hay un elemento arrastrado, se crea un nuevo elemento de imagen en el destino
             if (draggedElement) {
-                const src = dataTransfer.getData('text/plain')
-                const imgElement = createItem(src)
-                currentTarget.appendChild(imgElement)
+                const src = dataTransfer.getData('text/plain');
+                const imgElement = createItem(src);
+
+                // Copiar los estilos del elemento original al nuevo
+                imgElement.style.cssText = draggedElement.style.cssText;
+
+                currentTarget.appendChild(imgElement);
             }
 
-            currentTarget.classList.remove('drag-over')
-            currentTarget.querySelector('.drag-preview')?.remove()
+            removeDragStyles();
         }
 
+        // Función para manejar cuando un elemento es arrastrado sobre una fila o sección
         function handleDragOver(event) {
             event.preventDefault()
 
-            const { currentTarget, dataTransfer } = event
+            const { currentTarget } = event
             if (sourceContainer === currentTarget) return
 
+            // Añade una clase para indicar que un elemento se está arrastrando sobre la fila o sección
             currentTarget.classList.add('drag-over')
 
+            // Si no existe una vista previa del arrastre, crea una vista previa temporal
             const dragPreview = document.querySelector('.drag-preview')
 
             if (draggedElement && !dragPreview) {
@@ -280,130 +398,378 @@
             }
         }
 
+        // Función para manejar cuando un elemento deja de estar sobre una fila o sección
         function handleDragLeave(event) {
-            event.preventDefault()
+            event.preventDefault();
 
-            const { currentTarget } = event
-            currentTarget.classList.remove('drag-over')
-            currentTarget.querySelector('.drag-preview')?.remove()
+            const { currentTarget } = event;
+            removeDragStyles(currentTarget);
         }
 
+        // Función para manejar el inicio de un arrastre
         function handleDragStart(event) {
             draggedElement = event.target
             sourceContainer = draggedElement.parentNode
+            // Guarda la URL de la imagen en dataTransfer para poder recuperarla en el drop
             event.dataTransfer.setData('text/plain', draggedElement.src)
         }
 
         function handleDragEnd(event) {
-            draggedElement = null
-            sourceContainer = null
+            draggedElement = null;
+            sourceContainer = null;
+            // Limpia cualquier vista previa de arrastre
+            document.querySelectorAll('.drag-preview').forEach(preview => preview.remove());
         }
 
+        // Función para manejar el clic en el botón de reinicio
         resetButton.addEventListener('click', () => {
             const items = $$('.tier .item-image')
+            // Remueve cada imagen de la tier list y las devuelve a la sección de items
             items.forEach(item => {
                 item.remove()
                 itemsSection.appendChild(item)
             })
         })
 
+        function removeDragStyles(target = null) {
+            const dragOverElements = document.querySelectorAll('.drag-over');
+            dragOverElements.forEach(element => {
+                if (target && target !== element) return;
+                element.classList.remove('drag-over');
+                element.querySelector('.drag-preview')?.remove();
+            });
+        }
+
+        // Función para inicializar filas existentes
+        function initializeRows() {
+            const rows = document.querySelectorAll('.tier .row');
+            rows.forEach(row => {
+                // Crear caja-opciones si no existe y añadir color pickers y botón de eliminar
+                let cajaOpciones = row.querySelector('.caja-opciones');
+                if (!cajaOpciones) {
+                    cajaOpciones = document.createElement('div');
+                    cajaOpciones.className = 'caja-opciones';
+                    row.appendChild(cajaOpciones);
+                }
+                addColorPickersAndRemoveButton(row);
+            });
+        }
+
+        // Función para añadir color pickers y botón de eliminar a una fila
+        function addColorPickersAndRemoveButton(row) {
+            const cajaOpciones = row.querySelector('.caja-opciones');
+
+            if (cajaOpciones) {
+                const colorBox = document.createElement("div")
+                cajaOpciones.appendChild(colorBox);
+
+                // Crear y añadir color picker para cambiar el color de fondo
+                if (!cajaOpciones.querySelector('.color-picker')) {
+                    const colorPickerAside = document.createElement('input');
+                    colorPickerAside.type = 'color';
+                    colorPickerAside.className = 'color-picker';
+                    colorPickerAside.value = getComputedStyle(row.querySelector('.label')).getPropertyValue('--level').trim() || '#80ffff'; // Valor por defecto
+
+                    // Crear el elemento SVG
+                    const svgNS = "http://www.w3.org/2000/svg";
+                    const svgElement = document.createElementNS(svgNS, "svg");
+                    svgElement.setAttribute("xmlns", svgNS);
+                    svgElement.setAttribute("width", "24");
+                    svgElement.setAttribute("height", "24");
+                    svgElement.setAttribute("viewBox", "0 0 24 24");
+                    svgElement.setAttribute("fill", "none");
+                    svgElement.setAttribute("stroke", colorPickerAside.value);  // Color inicial basado en el valor del input
+                    svgElement.setAttribute("stroke-width", "2");
+                    svgElement.setAttribute("stroke-linecap", "round");
+                    svgElement.setAttribute("stroke-linejoin", "round");
+                    svgElement.classList.add("icon", "icon-tabler", "icons-tabler-outline", "icon-tabler-palette");
+
+                    const path1 = document.createElementNS(svgNS, "path");
+                    path1.setAttribute("stroke", "none");
+                    path1.setAttribute("d", "M0 0h24v24H0z");
+                    path1.setAttribute("fill", "none");
+
+                    const path2 = document.createElementNS(svgNS, "path");
+                    path2.setAttribute("d", "M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25");
+
+                    const path3 = document.createElementNS(svgNS, "path");
+                    path3.setAttribute("d", "M8.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0");
+
+                    const path4 = document.createElementNS(svgNS, "path");
+                    path4.setAttribute("d", "M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0");
+
+                    const path5 = document.createElementNS(svgNS, "path");
+                    path5.setAttribute("d", "M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0");
+
+                    // Agregar los paths al svg
+                    svgElement.append(path1, path2, path3, path4, path5);
+
+                    // Crear el label y agregar el colorPicker y el svg
+                    const labelPickerAside = document.createElement("label");
+                    labelPickerAside.appendChild(colorPickerAside);
+                    labelPickerAside.appendChild(svgElement);
+
+                    // Agregar el label al colorBox
+                    colorBox.appendChild(labelPickerAside);
+
+                    // Actualizar tanto el color del SVG como el del label al seleccionar un nuevo color
+                    colorPickerAside.addEventListener('input', (e) => {
+                        const newColor = e.target.value;
+                        console.log(newColor)
+                        row.querySelector('.label').style.setProperty('--level', newColor);  // Cambiar color del label
+                        svgElement.setAttribute("stroke", newColor);  // Cambiar color del SVG
+                    });
+                }
+
+                // Crear y añadir color picker para cambiar el color del texto
+                if (!cajaOpciones.querySelector('.color-picker-text')) {
+                    const colorPickerText = document.createElement('input');
+                    colorPickerText.type = 'color';
+                    colorPickerText.className = 'color-picker-text';
+
+                    // Obtener el color actual del texto
+                    let initialColor = row.querySelector('.label span').style.color || '#333';
+
+                    // Convertir RGB a hexadecimal si es necesario
+                    if (initialColor.startsWith('rgb')) {
+                        initialColor = rgbToHex(initialColor);
+                    }
+
+                    colorPickerText.value = initialColor;
+
+                    // Crear el elemento SVG con el color inicial
+                    const svgNS = "http://www.w3.org/2000/svg";
+                    const svgElement = document.createElementNS(svgNS, "svg");
+                    svgElement.setAttribute("xmlns", svgNS);
+                    svgElement.setAttribute("width", "26");
+                    svgElement.setAttribute("height", "26");
+                    svgElement.setAttribute("viewBox", "0 0 24 24");
+                    svgElement.setAttribute("fill", "none");
+                    svgElement.setAttribute("stroke", colorPickerText.value);  // Color inicial basado en el valor del input
+                    svgElement.setAttribute("stroke-width", "2");
+                    svgElement.setAttribute("stroke-linecap", "round");
+                    svgElement.setAttribute("stroke-linejoin", "round");
+                    svgElement.classList.add("icon", "icon-tabler", "icons-tabler-outline", "icon-tabler-text-color");
+
+                    const path1 = document.createElementNS(svgNS, "path");
+                    path1.setAttribute("stroke", "none");
+                    path1.setAttribute("d", "M0 0h24v24H0z");
+                    path1.setAttribute("fill", "none");
+
+                    const path2 = document.createElementNS(svgNS, "path");
+                    path2.setAttribute("d", "M9 15v-7a3 3 0 0 1 6 0v7");
+
+                    const path3 = document.createElementNS(svgNS, "path");
+                    path3.setAttribute("d", "M9 11h6");
+
+                    const path4 = document.createElementNS(svgNS, "path");
+                    path4.setAttribute("d", "M5 19h14");
+
+                    // Agregar los paths al svg
+                    svgElement.append(path1, path2, path3, path4);
+
+                    // Crear el label y agregar el colorPicker y el svg
+                    const labelPickerText = document.createElement("label");
+                    labelPickerText.appendChild(colorPickerText);
+                    labelPickerText.appendChild(svgElement);
+
+                    // Agregar el label al colorBox
+                    colorBox.appendChild(labelPickerText);
+
+                    // Actualizar tanto el color del texto como el del SVG al seleccionar un nuevo color
+                    colorPickerText.addEventListener('input', (e) => {
+                        const newColor = e.target.value;
+                        row.querySelector('.label span').style.color = newColor;  // Cambiar color del texto
+                        svgElement.setAttribute("stroke", newColor);  // Cambiar color del SVG
+                    });
+                }
+
+                // Función para convertir RGB a Hexadecimal
+                function rgbToHex(rgb) {
+                    const rgbArray = rgb.match(/\d+/g).map(Number);
+                    return "#" + rgbArray.map(x => {
+                        const hex = x.toString(16);
+                        return hex.length === 1 ? "0" + hex : hex;
+                    }).join("");
+                }
 
 
-
+                // Crear y añadir botón de eliminar
+                if (!cajaOpciones.querySelector('button')) {
+                    const removeButton = document.createElement('button');
+                    removeButton.textContent = 'Eliminar';
+                    removeButton.addEventListener('click', () => {
+                        row.remove();
+                    });
+                    cajaOpciones.appendChild(removeButton);
+                }
+            }
+        }
 
         // Función para añadir una nueva fila
         function addRow() {
-            const row = document.createElement('div')
-            row.className = 'row'
+            const row = document.createElement('div');
+            row.className = 'row';
 
-            const aside = document.createElement('aside')
-            aside.className = 'label'
-            aside.style.setProperty('--level', '#7fff7f')
+            const aside = document.createElement('aside');
+            aside.className = 'label';
+            aside.style.setProperty('--level', '#80ffff');
 
-            const span = document.createElement('span')
-            span.contentEditable = true
-            span.textContent = 'Nuevo'
+            const span = document.createElement('span');
+            span.contentEditable = true;
+            span.textContent = 'Nuevo';
+            span.style.color = "#333"
 
-            const rowButtons = document.createElement('div')
-            rowButtons.className = 'row-buttons'
+            const rowButtons = document.createElement('div');
+            rowButtons.className = 'row-buttons';
 
-            const colorPicker = document.createElement('input')
-            colorPicker.type = 'color'
-            colorPicker.className = 'color-picker'
-            colorPicker.addEventListener('input', (e) => {
-                aside.style.setProperty('--level', e.target.value)
-            })
+            const cajaOpciones = document.createElement('div');
+            cajaOpciones.className = 'caja-opciones';
 
-            const removeButton = document.createElement('button')
-            removeButton.textContent = 'Eliminar'
-            removeButton.addEventListener('click', () => {
-                row.remove()
-            })
+            aside.appendChild(span);
+            row.appendChild(aside);
+            row.appendChild(rowButtons);
+            row.appendChild(cajaOpciones);
 
-            const cajaOpciones = document.createElement("div")
-            cajaOpciones.className = "caja-opciones"
-
-            cajaOpciones.append(colorPicker, removeButton)
-
-            aside.appendChild(span)
-            row.appendChild(aside)
-            row.appendChild(rowButtons)
-            row.appendChild(cajaOpciones)
+            // Añadir color pickers y botón de eliminar a la nueva fila
+            addColorPickersAndRemoveButton(row);
 
             // Añadir eventos drag and drop a la nueva fila
-            row.addEventListener('dragover', handleDragOver)
-            row.addEventListener('drop', handleDrop)
-            row.addEventListener('dragleave', handleDragLeave)
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('drop', handleDrop);
+            row.addEventListener('dragleave', handleDragLeave);
 
-            document.querySelector('.tier').appendChild(row)
+            document.querySelector('.tier').appendChild(row);
         }
 
+        // Inicializar filas existentes al cargar la página
+        document.addEventListener('DOMContentLoaded', initializeRows);
+
         // Añadir evento al botón de agregar fila
-        document.querySelector('#add-row-button').addEventListener('click', addRow)
+        document.querySelector('#add-row-button').addEventListener('click', addRow);
+
+        // Selecciona los elementos necesarios
+        const toggleFitButton = document.getElementById('toggle-fit-button');
+        const backgroundColorPicker = document.getElementById('background-color-picker');
+        const makeBackgroundTransparentButton = document.getElementById('make-background-transparent-button');
+        const svgIcon = document.querySelector('#change-background-label svg'); // Selecciona el SVG
+
+        // Variable para rastrear el estado del fondo
+        let isBackgroundTransparent = false;
+
+        // Establecer el color inicial del selector de color al color de fondo de las imágenes
+        function initializeColorPicker() {
+            const itemImages = document.querySelectorAll('.item-image');
+            if (itemImages.length > 0) {
+                // Obtiene el color de fondo del primer elemento .item-image
+                const initialColor = window.getComputedStyle(itemImages[0]).backgroundColor;
+                // Convertir el color a formato hexadecimal
+                const rgbToHex = (rgb) => {
+                    const [r, g, b] = rgb.match(/\d+/g);
+                    return `#${((1 << 24) + (+r << 16) + (+g << 8) + +b).toString(16).slice(1).toUpperCase()}`;
+                };
+                backgroundColorPicker.value = rgbToHex(initialColor);
+                svgIcon.style.color = initialColor; // Inicializa el color del SVG
+            } else {
+                // Si no hay elementos, establecer el valor predeterminado
+                backgroundColorPicker.value = '#ffffff';
+                svgIcon.style.color = '#ffffff'; // Establecer color por defecto del SVG
+            }
+        }
+
+        // Alternar entre `object-fit: cover` y `object-fit: contain`
+        toggleFitButton.addEventListener('click', () => {
+            const itemImages = document.querySelectorAll('.item-image');
+            itemImages.forEach(img => {
+                img.style.objectFit = img.style.objectFit === 'contain' ? 'cover' : 'contain';
+            });
+        });
+
+        // Cambiar color de fondo de las imágenes y del SVG
+        backgroundColorPicker.addEventListener('input', (e) => {
+            const color = e.target.value;
+            const itemImages = document.querySelectorAll('.item-image');
+            itemImages.forEach(img => {
+                img.style.backgroundColor = color;
+            });
+
+            // Cambiar el color del SVG al nuevo color
+            svgIcon.style.color = color;
+
+            // Si el fondo era transparente, cambiar el estado a no transparente
+            isBackgroundTransparent = false;
+        });
+
+        // Hacer transparente o restaurar el fondo de las imágenes
+        makeBackgroundTransparentButton.addEventListener('click', () => {
+            const itemImages = document.querySelectorAll('.item-image');
+            if (isBackgroundTransparent) {
+                // Si el fondo es transparente, restaurar el color del input
+                const color = backgroundColorPicker.value;
+                itemImages.forEach(img => {
+                    img.style.backgroundColor = color;
+                });
+                svgIcon.style.color = color; // Restaurar el color del SVG
+            } else {
+                // Hacer el fondo transparente
+                itemImages.forEach(img => {
+                    img.style.backgroundColor = 'transparent';
+                });
+                svgIcon.style.color = '#ffffff'; // Establecer el color del SVG a blanco
+            }
+
+            // Alternar el estado
+            isBackgroundTransparent = !isBackgroundTransparent;
+        });
+
+        // Inicializa el selector de color al cargar la página
+        initializeColorPicker();
 
     </script>
 </head>
 
 <body>
     <header id="top-header">
-        <img src="" />
+        <img src="data:image/webp;base64, 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"
+            alt="Logo SCR98">
+
         <h1>TIERLIST</h1>
     </header>
 
     <section class="tier">
         <div class="row">
             <aside class="label" style="--level: var(--color-s)">
-                <span contenteditable="true">S</span>
+                <span contenteditable="true" style="color: #333;">S</span>
             </aside>
         </div>
 
         <div class="row">
             <aside class="label" style="--level: var(--color-a)">
-                <span contenteditable="true">A</span>
+                <span contenteditable="true" style="color: #333;">A</span>
             </aside>
         </div>
 
         <div class="row">
             <aside class="label" style="--level: var(--color-b)">
-                <span contenteditable="true">B</span>
+                <span contenteditable="true" style="color: #333;">B</span>
             </aside>
         </div>
 
         <div class="row">
             <aside class="label" style="--level: var(--color-c)">
-                <span contenteditable="true">C</span>
+                <span contenteditable="true" style="color: #333;">C</span>
             </aside>
         </div>
 
         <div class="row">
             <aside class="label" style="--level: var(--color-d)">
-                <span contenteditable="true">D</span>
+                <span contenteditable="true" style="color: #333;">D</span>
             </aside>
         </div>
 
         <div class="row">
             <aside class="label" style="--level: var(--color-e)">
-                <span contenteditable="true">E</span>
+                <span contenteditable="true" style="color: #333;">E</span>
             </aside>
         </div>
     </section>
@@ -411,9 +777,9 @@
     <footer id="selector">
 
         <section id="selector-buttons">
-            <label>
+            <label title="Subir imágenes">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
                     <path d="M9 12h6" />
@@ -422,19 +788,65 @@
                 <input multiple accept="image/*" id="image-input" type="file" hidden />
             </label>
 
-            <button id="reset-tier-button">
+            <button id="reset-tier-button" title="Reiniciar la posición de las imágenes">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5" />
                 </svg>
             </button>
 
             <!-- Botón para agregar fila -->
-            <button id="add-row-button">Agregar Fila</button>
+            <button id="add-row-button" title="Añadir una nueva columna">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12.5 21h-7.5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
+                    <path d="M3 10h18" />
+                    <path d="M10 3v18" />
+                    <path d="M16 19h6" />
+                    <path d="M19 16v6" />
+                </svg>
+            </button>
+
+
+            <button id="toggle-fit-button" title='Alternar entre "cubrir" y "contener" las imágenes'>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 6l6 6l-6 6" />
+                    <path d="M20 6l-6 6l6 6" />
+                </svg>
+            </button>
+
+            <!-- Label y selector de color -->
+            <label for="background-color-picker" id="change-background-label"
+                title="Seleccionar color de fondo para las imágenes">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M5 3m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" />
+                    <path d="M19 6h1a2 2 0 0 1 2 2a5 5 0 0 1 -5 5l-5 0v2" />
+                    <path d="M10 15m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z" />
+                </svg>
+                <input type="color" id="background-color-picker" title="Pick a background color" />
+            </label>
+
+            <!-- Botón para hacer el fondo transparente -->
+            <button id="make-background-transparent-button" title="Hacer que el fondo de la imagen sea transparente">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path
+                        d="M5 11a7 7 0 0 1 14 0v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-7" />
+                    <path d="M10 10l.01 0" />
+                    <path d="M14 10l.01 0" />
+                    <path d="M10 14a3.5 3.5 0 0 0 4 0" />
+                </svg>
+            </button>
         </section>
 
-        <section id="selector-items">
+        <section id="selector-items" title="Arrastra y suelta para subir las imágenes">
 
         </section>
     </footer>
